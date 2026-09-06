@@ -157,7 +157,7 @@ export default function StartScreen({ onComplete, countFor }: StartScreenProps) 
     <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 pb-10 pt-6 md:px-7 lg:max-w-5xl">
       <header className="mb-5">
         <p className="text-sm font-semibold tracking-wide text-[#A1887F]">
-          12×12 컬러비즈 도안 갤러리
+          컬러비즈 도안 갤러리 · 도안 50종
         </p>
         <h1 className="mt-1 text-2xl font-extrabold text-[#5D4037] sm:text-3xl">
           {step.title}
