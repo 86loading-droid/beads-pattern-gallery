@@ -10,6 +10,8 @@ interface Props {
   shortages: ColorKey[];
   /** used를 생략하면 완성(전량 차감), 넘기면 부분 사용 차감 */
   onConsume: (pattern: Pattern, used?: BeadCount) => Promise<StoreResult>;
+  /** 직접 만든 도안이면 고치기, 기본 도안이면 본떠 새로 만들기 */
+  onEdit?: () => void;
   onBack: () => void;
 }
 
@@ -17,7 +19,7 @@ interface Props {
  * 도안 상세 + 재고 차감 화면.
  * 완성 버튼은 도안 전량을 차감하고, 직접 수량 입력은 미완성·부분 사용분만 차감합니다.
  */
-export default function PatternDetail({ pattern, stock, shortages, onConsume, onBack }: Props) {
+export default function PatternDetail({ pattern, stock, shortages, onConsume, onEdit, onBack }: Props) {
   const [manual, setManual] = useState<BeadCount | null>(null);
   const [msg, setMsg] = useState<{ bad: boolean; text: string } | null>(null);
   const [sending, setSending] = useState(false);
@@ -75,6 +77,9 @@ export default function PatternDetail({ pattern, stock, shortages, onConsume, on
         <li className="rounded-full border border-[#EADBC6] bg-[#FBF3E6] px-3 py-1">
           비즈 {formatCount(pattern.beads)}개
         </li>
+        {pattern.custom ? (
+          <li className="rounded-full border border-[#E4572E] bg-[#FFF3EC] px-3 py-1 text-[#E4572E]">직접 만든 도안</li>
+        ) : null}
       </ul>
 
       {msg ? (
@@ -200,9 +205,16 @@ export default function PatternDetail({ pattern, stock, shortages, onConsume, on
         </div>
       </div>
 
-      <button type="button" onClick={onBack} className="mt-6 rounded-xl border-2 border-[#D8C2A6] px-4 py-2.5 font-bold">
-        ← 목록으로
-      </button>
+      <div className="mt-6 flex flex-wrap gap-2.5">
+        <button type="button" onClick={onBack} className="rounded-xl border-2 border-[#D8C2A6] px-4 py-2.5 font-bold">
+          ← 목록으로
+        </button>
+        {onEdit ? (
+          <button type="button" onClick={onEdit} className="rounded-xl border-2 border-[#D8C2A6] px-4 py-2.5 font-bold">
+            {pattern.custom ? '이 도안 고치기' : '이 도안 본떠 만들기'}
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 }
