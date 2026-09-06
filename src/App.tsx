@@ -119,7 +119,7 @@ export default function App() {
                 </span>
                 <span className="font-bold">{p.title}</span>
                 <span className="text-xs tabular-nums text-[#8A7263]">
-                  {p.size}×{p.size} · {p.colorCount}색 · 비즈 {formatCount(p.beads)}개
+                  {p.cols}×{p.rowCount} · {p.colorCount}색 · 비즈 {formatCount(p.beads)}개
                 </span>
                 {short.length > 0 ? (
                   <span className="text-[11px] font-bold text-[#B3261E]">
