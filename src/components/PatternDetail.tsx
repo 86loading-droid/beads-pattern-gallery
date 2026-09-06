@@ -69,7 +69,7 @@ export default function PatternDetail({ pattern, stock, shortages, onConsume, on
 
       <ul className="mt-3 flex flex-wrap gap-2 p-0 text-xs font-bold">
         <li className="rounded-full border border-[#EADBC6] bg-[#FBF3E6] px-3 py-1">
-          {pattern.size} × {pattern.size} 칸
+          {pattern.cols} × {pattern.rowCount} 칸
         </li>
         <li className="rounded-full border border-[#EADBC6] bg-[#FBF3E6] px-3 py-1">색 {pattern.colorCount}가지</li>
         <li className="rounded-full border border-[#EADBC6] bg-[#FBF3E6] px-3 py-1">

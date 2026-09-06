@@ -23,8 +23,17 @@ export default function PatternGrid({
         row.split('').map((ch, x) => (
           <span
             key={`${y}-${x}`}
-            className={`aspect-square ${large ? 'rounded-[3px] shadow-[inset_0_0_0_2px_rgba(255,255,255,0.35)]' : 'rounded-[2px]'}`}
-            style={{ backgroundColor: ch === '.' ? 'transparent' : COLOR_HEX[ch as ColorKey] }}
+            className={`aspect-square ${large ? 'rounded-[3px]' : 'rounded-[2px]'}`}
+            style={{
+              backgroundColor: ch === '.' ? 'transparent' : COLOR_HEX[ch as ColorKey],
+              // 화이트·투명 비즈도 흰 배경에서 구분되도록 아주 옅은 테두리를 둔다
+              boxShadow:
+                ch === '.'
+                  ? undefined
+                  : large
+                    ? 'inset 0 0 0 2px rgba(255,255,255,0.35), inset 0 0 0 3px rgba(93,64,55,0.16)'
+                    : 'inset 0 0 0 1px rgba(93,64,55,0.16)',
+            }}
           />
         )),
       )}
