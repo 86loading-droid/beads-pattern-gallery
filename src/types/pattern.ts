@@ -10,13 +10,15 @@ export type DifficultyId = 'easy' | 'medium' | 'challenge';
 export type CategoryId = 'animal' | 'vehicle' | 'food' | 'shape' | 'nature' | 'emotion';
 
 /**
- * 격자 크기 묶음.
- * 도안은 가로·세로 칸 수가 다를 수 있으므로, 긴 쪽을 기준으로 이 중 하나에 담습니다.
- * 18은 '13칸 이상'을 뜻합니다 — 원본 도안 중 17×17짜리가 있어 담을 자리를 둡니다.
+ * 격자 크기 묶음 — 고르기 쉽도록 세 단계로만 나눕니다.
+ *  8 = 미니 사이즈 (6×6 · 8×8)
+ * 12 = 보통 사이즈 (10×10 · 12×12)
+ * 18 = 큰 사이즈 (13칸 이상)
+ * 도안은 가로·세로 칸 수가 다를 수 있으므로 긴 쪽을 기준으로 담습니다.
  */
-export type GridSizeId = 6 | 8 | 10 | 12 | 18;
+export type GridSizeId = 8 | 12 | 18;
 
-export const GRID_SIZES: GridSizeId[] = [6, 8, 10, 12, 18];
+export const GRID_SIZES: GridSizeId[] = [8, 12, 18];
 
 /** 긴 쪽 칸 수를 담을 수 있는 가장 작은 묶음 */
 export function sizeOf(rows: string[]): GridSizeId {
@@ -41,6 +43,10 @@ export interface PatternSource {
   title: string;
   category: CategoryId;
   rows: string[];
+  /** 앱에서 직접 만든 도안이면 true — 수정·삭제할 수 있습니다 */
+  custom?: boolean;
+  /** 만든 시각 (직접 만든 도안만) */
+  at?: string;
 }
 
 /** 파생 정보까지 채워진 도안 */
