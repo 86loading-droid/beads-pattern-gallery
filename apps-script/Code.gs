@@ -8,10 +8,12 @@
  * 시트 두 장을 자동으로 만듭니다.
  *   재고    — 색상키 | 색상명 | 수량      (교사가 시트에서 직접 고쳐도 앱에 반영됩니다)
  *   소비기록 — 기록ID | 시각 | 구분 | 도안 | 수량 | 색상별사용
+ *   도안    — 도안ID | 이름 | 주제 | 가로 | 세로 | 칸 | 만든시각   (앱에서 직접 만든 도안)
  */
 
 var SHEET_STOCK = '재고';
 var SHEET_LOG = '소비기록';
+var SHEET_PATTERN = '도안';
 var LOG_KEEP = 300; // 소비기록 보관 건수 — 넘으면 오래된 것부터 지웁니다
 
 /** 보유 색상과 최초 수량 — 색을 추가하려면 여기에 한 줄 넣으면 됩니다 */
@@ -68,6 +70,12 @@ function doPost(e) {
         return json_(removeEntry_(body.id));
       case 'adjust':
         return json_(adjust_(body.next));
+      case 'patterns':
+        return json_({ ok: true, list: readPatterns_() });
+      case 'savePattern':
+        return json_(savePattern_(body.pattern));
+      case 'removePattern':
+        return json_(removePattern_(body.id));
       default:
         return json_({ ok: false, error: 'unknown_action' });
     }
@@ -152,6 +160,97 @@ function adjust_(next) {
   if (!changed) return { ok: false, error: 'nochange' };
   writeStock_(stock);
   return { ok: true, state: readState_() };
+}
+
+/* ------------------------------------------------------------------ */
+/* 앱에서 직접 만든 도안                                                 */
+/* ------------------------------------------------------------------ */
+
+/** 한 변의 최대 칸 수 — 앱의 편집기와 같은 기준 */
+var PATTERN_MAX = 17;
+var PATTERN_MIN = 4;
+
+function patternSheet_() {
+  var ss = book_();
+  var sheet = ss.getSheetByName(SHEET_PATTERN);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_PATTERN);
+    sheet.getRange(1, 1, 1, 7).setValues([['도안ID', '이름', '주제', '가로', '세로', '칸', '만든시각']]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function readPatterns_() {
+  var values = patternSheet_().getDataRange().getValues();
+  var list = [];
+  // 최근에 만든 것이 먼저 오도록 아래에서부터 읽는다
+  for (var r = values.length - 1; r >= 1; r--) {
+    var id = String(values[r][0] || '').trim();
+    if (!id) continue;
+    var rows = [];
+    try {
+      rows = JSON.parse(values[r][5] || '[]');
+    } catch (err) {
+      rows = [];
+    }
+    if (!rows.length) continue;
+    list.push({
+      id: id,
+      title: String(values[r][1] || ''),
+      category: String(values[r][2] || 'shape'),
+      rows: rows,
+      custom: true,
+      at: String(values[r][6] || '')
+    });
+  }
+  return list;
+}
+
+/** 새 도안을 넣거나, 같은 ID가 있으면 그 줄을 고쳐 쓴다 */
+function savePattern_(p) {
+  if (!p) return { ok: false, error: 'empty' };
+  var title = String(p.title || '').trim();
+  if (!title) return { ok: false, error: 'notitle' };
+
+  var rows = p.rows;
+  if (!rows || !rows.length || rows.length < PATTERN_MIN) return { ok: false, error: 'empty' };
+  var width = String(rows[0]).length;
+  if (width < PATTERN_MIN) return { ok: false, error: 'empty' };
+  if (width > PATTERN_MAX || rows.length > PATTERN_MAX) return { ok: false, error: 'toobig' };
+
+  var painted = false;
+  for (var i = 0; i < rows.length; i++) {
+    var line = String(rows[i]);
+    if (line.length !== width) return { ok: false, error: 'empty' };
+    if (line.replace(/\./g, '').length > 0) painted = true;
+  }
+  if (!painted) return { ok: false, error: 'empty' };
+
+  var sheet = patternSheet_();
+  var id = String(p.id || Utilities.getUuid());
+  var line = [id, title, String(p.category || 'shape'), width, rows.length, JSON.stringify(rows), String(p.at || nowText_())];
+
+  var values = sheet.getDataRange().getValues();
+  for (var r = 1; r < values.length; r++) {
+    if (String(values[r][0]) === id) {
+      sheet.getRange(r + 1, 1, 1, 7).setValues([line]);
+      return { ok: true, list: readPatterns_() };
+    }
+  }
+  sheet.appendRow(line);
+  return { ok: true, list: readPatterns_() };
+}
+
+function removePattern_(id) {
+  var sheet = patternSheet_();
+  var values = sheet.getDataRange().getValues();
+  for (var r = 1; r < values.length; r++) {
+    if (String(values[r][0]) !== String(id)) continue;
+    sheet.deleteRow(r + 1);
+    return { ok: true, list: readPatterns_() };
+  }
+  return { ok: false, error: 'notfound' };
 }
 
 /* ------------------------------------------------------------------ */
