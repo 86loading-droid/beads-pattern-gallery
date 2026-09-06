@@ -1,34 +1,66 @@
-// 앱 진입점 — 시작 화면, 갤러리, 도안 상세(재고 차감), 재고 현황을 잇는다.
-// 기존 App.tsx의 갤러리 렌더링만 아래 gallery 블록 자리에 넣으면 됩니다.
+// 앱 진입점 — 시작 화면, 갤러리, 도안 상세(재고 차감), 도안 만들기, 재고 현황을 잇는다.
 
 import { useCallback, useMemo, useState } from 'react';
 import StartScreen from './components/StartScreen';
 import PatternDetail from './components/PatternDetail';
+import PatternEditor from './components/PatternEditor';
 import PatternGrid from './components/PatternGrid';
 import InventoryPanel from './components/InventoryPanel';
 import { useInventory } from './hooks/useInventory';
+import { useCustomPatterns } from './hooks/useCustomPatterns';
 import { PATTERNS } from './data/patterns';
 import { COLOR_NAME, formatCount } from './data/inventory';
-import { ALL_SELECTED, filterPatterns, type PatternSelection } from './types/pattern';
+import {
+  ALL_SELECTED,
+  derivePattern,
+  filterPatterns,
+  type Pattern,
+  type PatternSelection,
+  type PatternSource,
+} from './types/pattern';
 
-type View = 'start' | 'gallery' | 'detail' | 'stock';
+type View = 'start' | 'gallery' | 'detail' | 'stock' | 'editor';
 
 export default function App() {
   const [view, setView] = useState<View>('start');
   const [selection, setSelection] = useState<PatternSelection>(ALL_SELECTED);
   const [openId, setOpenId] = useState<string | null>(null);
+  /** 편집기에 넘길 원본 — null이면 빈 도안부터 시작 */
+  const [editBase, setEditBase] = useState<{ source: PatternSource; copy: boolean } | null>(null);
   const inv = useInventory();
+  const mine = useCustomPatterns();
 
-  const countFor = useCallback((partial: PatternSelection) => filterPatterns(PATTERNS, partial).length, []);
-  const list = useMemo(() => filterPatterns(PATTERNS, selection), [selection]);
-  const open = openId ? PATTERNS.find((p) => p.id === openId) ?? null : null;
+  // 직접 만든 도안을 앞에 두어 최근 만든 것이 먼저 보이게 한다
+  const all: Pattern[] = useMemo(
+    () => [...mine.list.map(derivePattern), ...PATTERNS],
+    [mine.list],
+  );
+
+  const countFor = useCallback((partial: PatternSelection) => filterPatterns(all, partial).length, [all]);
+  const list = useMemo(() => filterPatterns(all, selection), [all, selection]);
+  const open = openId ? all.find((p) => p.id === openId) ?? null : null;
+
+  function startNew() {
+    setEditBase(null);
+    setView('editor');
+  }
+
+  function startFrom(source: PatternSource, copy: boolean) {
+    setEditBase({ source, copy });
+    setView('editor');
+  }
 
   const header = (
-    <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 pt-4 text-[#5D4037] md:px-7 lg:max-w-5xl">
+    <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2 px-4 pt-4 text-[#5D4037] md:px-7 lg:max-w-5xl">
       <span className="mr-auto text-sm text-[#8A7263]">컬러비즈 도안 갤러리</span>
-      <span className="text-xs text-[#8A7263]">
-        {inv.offline ? '재고 서버 연결 끊김' : inv.storeLabel}
-      </span>
+      <span className="text-xs text-[#8A7263]">{inv.offline ? '재고 서버 연결 끊김' : inv.storeLabel}</span>
+      <button
+        type="button"
+        onClick={startNew}
+        className="rounded-full border-2 border-[#E4572E] px-3 py-1.5 text-xs font-bold text-[#E4572E]"
+      >
+        + 도안 만들기
+      </button>
       <button
         type="button"
         onClick={() => setView('stock')}
@@ -44,6 +76,27 @@ export default function App() {
       <>
         {header}
         <p className="mx-auto max-w-3xl px-4 py-10 text-center text-[#8A7263]">재고를 불러오는 중입니다…</p>
+      </>
+    );
+  }
+
+  if (view === 'editor') {
+    return (
+      <>
+        {header}
+        <PatternEditor
+          initial={editBase?.source ?? null}
+          copy={editBase?.copy ?? false}
+          stock={inv.stock}
+          busy={mine.busy}
+          storeLabel={mine.storeLabel}
+          onSave={mine.save}
+          onDelete={mine.remove}
+          onBack={() => {
+            setEditBase(null);
+            setView('gallery');
+          }}
+        />
       </>
     );
   }
@@ -88,6 +141,7 @@ export default function App() {
           stock={inv.stock}
           shortages={inv.shortagesFor(open.need)}
           onConsume={inv.consume}
+          onEdit={() => startFrom(open, !open.custom)}
           onBack={() => setView('gallery')}
         />
       </>
@@ -99,9 +153,22 @@ export default function App() {
       {header}
       <section className="mx-auto w-full max-w-3xl px-4 py-6 text-[#5D4037] md:px-7 lg:max-w-5xl">
         <h1 className="text-3xl font-extrabold">이런 도안이 있어요</h1>
-        <p className="mt-1 text-sm text-[#8A7263]">{list.length}개 도안</p>
+        <p className="mt-1 text-sm text-[#8A7263]">
+          {list.length}개 도안
+          {mine.list.length ? ` · 직접 만든 도안 ${mine.list.length}개 (${mine.storeLabel})` : ''}
+        </p>
 
         <div className="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
+          <button
+            type="button"
+            onClick={startNew}
+            className="flex min-h-[168px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#E4572E] bg-[#FFF6F1] p-3.5 text-[#E4572E]"
+          >
+            <span className="text-3xl leading-none">＋</span>
+            <span className="font-bold">새 도안 만들기</span>
+            <span className="text-xs">직접 칠해서 추가해요</span>
+          </button>
+
           {list.map((p) => {
             const short = inv.shortagesFor(p.need);
             return (
@@ -112,7 +179,9 @@ export default function App() {
                   setOpenId(p.id);
                   setView('detail');
                 }}
-                className="flex flex-col items-center gap-2 rounded-2xl border-2 border-[#EADBC6] bg-white p-3.5"
+                className={`flex flex-col items-center gap-2 rounded-2xl border-2 bg-white p-3.5 ${
+                  p.custom ? 'border-[#E4572E]' : 'border-[#EADBC6]'
+                }`}
               >
                 <span className="w-20">
                   <PatternGrid rows={p.rows} title={p.title} />
@@ -121,6 +190,7 @@ export default function App() {
                 <span className="text-xs tabular-nums text-[#8A7263]">
                   {p.cols}×{p.rowCount} · {p.colorCount}색 · 비즈 {formatCount(p.beads)}개
                 </span>
+                {p.custom ? <span className="text-[11px] font-bold text-[#E4572E]">직접 만든 도안</span> : null}
                 {short.length > 0 ? (
                   <span className="text-[11px] font-bold text-[#B3261E]">
                     재고 부족 {short.map((k) => COLOR_NAME[k]).join(', ')}
