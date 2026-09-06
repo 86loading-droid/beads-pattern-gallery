@@ -79,6 +79,14 @@ export const CATEGORY_OPTIONS: (OptionItem<CategoryId> & { preview: string[] })[
     preview: ['.P..P.', 'PPPPPP', 'PPPPPP', '.PPPP.', '..PP..', '......'],
   },
   {
+    id: 'emotion',
+    label: '감정·표정',
+    hint: '웃는 얼굴 · 화난 얼굴 · 놀란 얼굴',
+    emoji: '🙂',
+    tone: { bg: '#FFF6E3', border: '#E8BE63', text: '#7C5A12' },
+    preview: ['.YYYY.', 'YKYYKY', 'YYYYYY', 'YKYYKY', 'Y.KK.Y', '.YYYY.'],
+  },
+  {
     id: 'nature',
     label: '자연·계절',
     hint: '나무 · 꽃 · 무지개 · 눈송이',
@@ -116,10 +124,18 @@ export const GRID_SIZE_OPTIONS: (OptionItem<GridSizeId> & { beads: number })[] =
   {
     id: 12,
     label: '12 × 12',
-    hint: '가장 커요 · 25분 이상',
+    hint: '커요 · 25분 이상',
     emoji: '⬜',
     tone: { bg: '#FFF3E4', border: '#DDA55F', text: '#7A4B14' },
     beads: 144,
+  },
+  {
+    id: 18,
+    label: '13칸 이상',
+    hint: '가장 커요 · 40분 이상',
+    emoji: '🟫',
+    tone: { bg: '#F6EEE4', border: '#C69A6B', text: '#6B4522' },
+    beads: 289,
   },
 ];
 
