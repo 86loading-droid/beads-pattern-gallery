@@ -7,10 +7,22 @@ export type ColorKey = 'A' | 'G' | 'K' | 'R' | 'O' | 'Y' | 'N' | 'S' | 'W' | 'V'
 export type DifficultyId = 'easy' | 'medium' | 'challenge';
 
 /** 주제(카테고리) */
-export type CategoryId = 'animal' | 'vehicle' | 'food' | 'shape' | 'nature';
+export type CategoryId = 'animal' | 'vehicle' | 'food' | 'shape' | 'nature' | 'emotion';
 
-/** 격자 크기 — 최대 12×12 */
-export type GridSizeId = 6 | 8 | 10 | 12;
+/**
+ * 격자 크기 묶음.
+ * 도안은 가로·세로 칸 수가 다를 수 있으므로, 긴 쪽을 기준으로 이 중 하나에 담습니다.
+ * 18은 '13칸 이상'을 뜻합니다 — 원본 도안 중 17×17짜리가 있어 담을 자리를 둡니다.
+ */
+export type GridSizeId = 6 | 8 | 10 | 12 | 18;
+
+export const GRID_SIZES: GridSizeId[] = [6, 8, 10, 12, 18];
+
+/** 긴 쪽 칸 수를 담을 수 있는 가장 작은 묶음 */
+export function sizeOf(rows: string[]): GridSizeId {
+  const longest = Math.max(rows.length, ...rows.map((r) => r.length));
+  return GRID_SIZES.find((s) => longest <= s) ?? 18;
+}
 
 export type OrAll<T> = T | 'all';
 
@@ -33,7 +45,14 @@ export interface PatternSource {
 
 /** 파생 정보까지 채워진 도안 */
 export interface Pattern extends PatternSource {
+  /** 담기는 격자 묶음 (긴 쪽 기준) */
   size: GridSizeId;
+  /** 실제 가로 칸 수 */
+  cols: number;
+  /** 실제 세로 칸 수 */
+  rowCount: number;
+  /** 가로·세로가 같지 않은 도안 */
+  oblong: boolean;
   /** 색상별 필요 비즈 수 */
   need: BeadCount;
   colorCount: number;
@@ -66,9 +85,13 @@ export function derivePattern(src: PatternSource): Pattern {
   });
   const values = Object.values(need) as number[];
   const colorCount = values.length;
+  const cols = Math.max(...src.rows.map((r) => r.length));
   return {
     ...src,
-    size: src.rows.length as GridSizeId,
+    size: sizeOf(src.rows),
+    cols,
+    rowCount: src.rows.length,
+    oblong: cols !== src.rows.length,
     need,
     colorCount,
     beads: values.reduce((a, b) => a + b, 0),
