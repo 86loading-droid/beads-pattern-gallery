@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+/*
+ * 태블릿 오작동 방지.
+ * - overscroll-behavior: 화면 가장자리를 쓸어 뒤로 가거나(아이폰),
+ *   위에서 아래로 당겨 새로고침되는(갤럭시) 것을 막습니다.
+ * - touch-action: 두 번 두드려 확대되는 것을 막아 버튼을 정확히 누르게 합니다.
+ */
+html,
+body {
+  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  touch-action: manipulation;
+}
+
+/* 도안 격자를 길게 눌렀을 때 글자 선택이나 복사 메뉴가 뜨지 않게 합니다 */
+[role='img'] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
