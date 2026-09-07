@@ -87,6 +87,14 @@ export const CATEGORY_OPTIONS: (OptionItem<CategoryId> & { preview: string[] })[
     preview: ['.YYYY.', 'YKYYKY', 'YYYYYY', 'YKYYKY', 'Y.KK.Y', '.YYYY.'],
   },
   {
+    id: 'character',
+    label: '캐릭터',
+    hint: '별이 · 꼬마 로봇 · 숲 요정',
+    emoji: '🧸',
+    tone: { bg: '#F3EEFA', border: '#A38FC9', text: '#4E3A78' },
+    preview: ['.PPPP.', 'PPPPPP', 'PKPPKP', 'PPPPPP', 'PPWWPP', '.PPPP.'],
+  },
+  {
     id: 'nature',
     label: '자연·계절',
     hint: '나무 · 꽃 · 무지개 · 눈송이',
