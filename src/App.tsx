@@ -209,6 +209,20 @@ export default function App() {
           {list.length}개 도안
           {mine.list.length ? ` · 직접 만든 도안 ${mine.list.length}개 (${mine.storeLabel})` : ''}
         </p>
+        {mine.shared && (!mine.online || mine.pending > 0) ? (
+          <p className="mt-2 rounded-xl border-2 border-[#EACB9B] bg-[#FFF8EC] px-3 py-2 text-sm text-[#7A5A2E]">
+            {mine.pending > 0
+              ? `직접 만든 도안 ${mine.pending}개가 아직 이 태블릿에만 있습니다. 인터넷이 연결되면 자동으로 올라가고, 그때부터 다른 태블릿에서도 보입니다.`
+              : '지금 공유 저장소에 연결되지 않았습니다. 만든 도안은 이 태블릿에 안전하게 보관되며, 연결되면 자동으로 올라갑니다.'}
+            <button
+              type="button"
+              onClick={mine.refresh}
+              className="ml-2 rounded-lg border-2 border-[#EACB9B] px-2 py-0.5 text-xs font-bold"
+            >
+              지금 맞추기
+            </button>
+          </p>
+        ) : null}
 
         <div className="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
           <button
