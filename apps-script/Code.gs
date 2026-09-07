@@ -1,15 +1,20 @@
 /**
  * 컬러비즈 재고 API — 구글 스프레드시트 + Apps Script
  *
- * 이 파일 하나를 스프레드시트의 [확장 프로그램 > Apps Script] 편집기에 붙여넣고
- * 웹 앱으로 배포하면, 모든 태블릿이 같은 재고를 보게 됩니다.
- * 자세한 절차는 배포-안내.md 를 참고하세요.
- *
- * 시트 두 장을 자동으로 만듭니다.
+ * 이 파일 하나를 Apps Script 편집기에 붙여넣고 웹 앱으로 배포하면,
+ * 모든 태블릿이 같은 재고와 같은 도안을 보게 됩니다.
+ * 아래 SHEET_ID 가 가리키는 스프레드시트에 시트 세 장을 자동으로 만듭니다.
  *   재고    — 색상키 | 색상명 | 수량      (교사가 시트에서 직접 고쳐도 앱에 반영됩니다)
  *   소비기록 — 기록ID | 시각 | 구분 | 도안 | 수량 | 색상별사용
  *   도안    — 도안ID | 이름 | 주제 | 가로 | 세로 | 칸 | 만든시각   (앱에서 직접 만든 도안)
  */
+
+/** 이 스크립트가 쓰는 스프레드시트 — 독립 프로젝트로 배포해도 같은 시트를 봅니다 */
+var SHEET_ID = '1zeJ0G8Rg1w8wtcCV_xHG14NNp0dcaEeKvQpiuGAPb1I';
+
+function book_() {
+  return SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+}
 
 var SHEET_STOCK = '재고';
 var SHEET_LOG = '소비기록';
@@ -262,7 +267,7 @@ function readState_() {
 }
 
 function stockSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book_();
   var sheet = ss.getSheetByName(SHEET_STOCK);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_STOCK);
@@ -297,7 +302,7 @@ function writeStock_(stock) {
 }
 
 function logSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book_();
   var sheet = ss.getSheetByName(SHEET_LOG);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_LOG);
@@ -359,9 +364,10 @@ function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-/** 편집기에서 한 번 실행하면 시트 두 장이 만들어집니다 */
+/** 편집기에서 한 번 실행하면 시트 세 장이 만들어집니다 */
 function 초기설정() {
   stockSheet_();
   logSheet_();
-  SpreadsheetApp.getActiveSpreadsheet().toast('재고 · 소비기록 시트를 준비했습니다.');
+  patternSheet_();
+  book_().toast('재고 · 소비기록 · 도안 시트를 준비했습니다.');
 }
