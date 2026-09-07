@@ -1,3 +1,4 @@
+import { callApi } from './api';
 import { BEAD_COLORS, INITIAL_STOCK, type StockEntry } from './inventory';
 import type { BeadCount, ColorKey } from '../types/pattern';
 
@@ -145,18 +146,11 @@ function normalize(raw: ApiResponse['state']): StockState {
 
 /**
  * Apps Script 웹 앱을 재고 저장소로 사용합니다.
- * Content-Type을 text/plain으로 보내는 이유: 그 외의 형식이면 브라우저가 사전 확인 요청을
- * 먼저 보내는데 Apps Script가 이를 처리하지 못해 요청이 막힙니다.
+ * 통신 방식은 api.ts 가 맡습니다 — 한 방식이 막히면 다른 방식으로 자동 전환합니다.
  */
 export function createSheetStore(url: string, key: string): StockStore {
   async function call(action: string, payload: Record<string, unknown> = {}): Promise<ApiResponse> {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ key, action, ...payload }),
-      redirect: 'follow',
-    });
-    return (await res.json()) as ApiResponse;
+    return (await callApi(url, key, action, payload)) as unknown as ApiResponse;
   }
 
   async function run(action: string, payload: Record<string, unknown> = {}): Promise<StoreResult> {

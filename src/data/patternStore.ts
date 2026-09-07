@@ -1,3 +1,4 @@
+import { callApi } from './api';
 import type { CategoryId, PatternSource } from '../types/pattern';
 
 /**
@@ -165,14 +166,8 @@ interface ApiResponse {
 
 export function createSheetPatternStore(url: string, key: string): PatternStore {
   async function call(action: string, payload: Record<string, unknown> = {}): Promise<ApiResponse> {
-    // Content-Type을 text/plain으로 보내는 이유는 재고 저장소와 같습니다(사전 확인 요청 회피).
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ key, action, ...payload }),
-      redirect: 'follow',
-    });
-    return (await res.json()) as ApiResponse;
+    // 통신 방식은 api.ts 가 맡습니다 — 한 방식이 막히면 다른 방식으로 자동 전환합니다.
+    return (await callApi(url, key, action, payload)) as unknown as ApiResponse;
   }
 
   function toError(code: string | undefined): PatternError {
