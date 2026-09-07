@@ -186,7 +186,7 @@ export default function PatternEditor({
         {/* 왼쪽 — 그리는 칸 */}
         <div>
           <div
-            className="mx-auto grid w-full max-w-[520px] gap-[2px] rounded-2xl border-2 border-[#EADBC6] bg-white p-2 [touch-action:none]"
+            className="mx-auto grid w-full max-w-[520px] gap-[1px] rounded-2xl border-2 border-[#EADBC6] bg-white p-2 select-none [touch-action:none]"
             style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
           >
             {grid.map((row, r) =>
@@ -202,10 +202,13 @@ export default function PatternEditor({
                   onPointerEnter={() => {
                     if (painting.current) paint(r, c);
                   }}
-                  className="aspect-square rounded-[3px]"
+                  className="aspect-square"
                   style={{
                     backgroundColor: ch === EMPTY ? '#FBF6EC' : COLOR_HEX[ch as ColorKey],
-                    boxShadow: 'inset 0 0 0 1px rgba(93,64,55,0.16)',
+                    // 다섯 칸마다 진한 선 — 칸을 세기 쉽게 한다
+                    boxShadow: `inset 0 0 0 1px rgba(93,64,55,0.16)${
+                      (c + 1) % 5 === 0 ? ', inset -2px 0 0 0 rgba(93,64,55,0.45)' : ''
+                    }${(r + 1) % 5 === 0 ? ', inset 0 -2px 0 0 rgba(93,64,55,0.45)' : ''}`,
                   }}
                 />
               )),

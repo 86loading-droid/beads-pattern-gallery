@@ -23,6 +23,8 @@ export default function PatternDetail({ pattern, stock, shortages, onConsume, on
   const [manual, setManual] = useState<BeadCount | null>(null);
   const [msg, setMsg] = useState<{ bad: boolean; text: string } | null>(null);
   const [sending, setSending] = useState(false);
+  /** 실수로 눌러 재고가 깎이지 않도록 완성 처리는 두 번 확인합니다 */
+  const [confirming, setConfirming] = useState(false);
 
   const keys = useMemo(
     () => (Object.keys(pattern.need) as ColorKey[]).sort((a, b) => (pattern.need[b] ?? 0) - (pattern.need[a] ?? 0)),
@@ -97,9 +99,12 @@ export default function PatternDetail({ pattern, stock, shortages, onConsume, on
         </p>
       ) : null}
 
-      <div className="mt-4 grid gap-5 md:grid-cols-[minmax(0,270px)_1fr] lg:gap-7 lg:grid-cols-[minmax(0,320px)_1fr]">
+      <div className="mt-4 grid gap-5 md:grid-cols-[minmax(0,360px)_1fr] lg:gap-7 lg:grid-cols-[minmax(0,440px)_1fr]">
         <div className="rounded-2xl border-2 border-[#EADBC6] bg-white p-3">
-          <PatternGrid rows={pattern.rows} title={pattern.title} large />
+          <PatternGrid rows={pattern.rows} title={pattern.title} large numbered />
+          <p className="mt-2 text-center text-[11px] text-[#8A7263]">
+            가로 {pattern.cols}칸 · 세로 {pattern.rowCount}칸 · 다섯 칸마다 진한 선
+          </p>
         </div>
 
         <div>
@@ -186,17 +191,49 @@ export default function PatternDetail({ pattern, stock, shortages, onConsume, on
                 <button type="button" onClick={startManual} className="rounded-xl border-2 border-[#D8C2A6] px-4 py-2.5 font-bold">
                   직접 수량 입력 (미완성)
                 </button>
-                <button
-                  type="button"
-                  disabled={shortages.length > 0 || sending}
-                  onClick={() => apply()}
-                  className="rounded-xl border-2 border-[#E4572E] bg-[#E4572E] px-4 py-2.5 font-bold text-white disabled:opacity-40"
-                >
-                  {sending ? '처리 중…' : '완성 — 전량 차감'}
-                </button>
+                {confirming ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setConfirming(false)}
+                      className="rounded-xl border-2 border-[#D8C2A6] px-4 py-2.5 font-bold"
+                    >
+                      아니요
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sending}
+                      onClick={() => {
+                        setConfirming(false);
+                        apply();
+                      }}
+                      className="rounded-xl border-2 border-[#E4572E] bg-[#E4572E] px-4 py-2.5 font-bold text-white disabled:opacity-40"
+                    >
+                      {sending ? '처리 중…' : `네, ${formatCount(pattern.beads)}개 차감`}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={shortages.length > 0 || sending}
+                    onClick={() => {
+                      setMsg(null);
+                      setConfirming(true);
+                    }}
+                    className="rounded-xl border-2 border-[#E4572E] bg-[#E4572E] px-4 py-2.5 font-bold text-white disabled:opacity-40"
+                  >
+                    완성 — 전량 차감
+                  </button>
+                )}
               </>
             )}
           </div>
+
+          {confirming ? (
+            <p className="mt-3 rounded-r-xl border-l-4 border-[#E4572E] bg-[#FFF3EC] px-4 py-2.5 text-sm font-bold text-[#B03A16]">
+              {pattern.title} 완성으로 처리하고 비즈 {formatCount(pattern.beads)}개를 재고에서 뺍니다. 맞나요?
+            </p>
+          ) : null}
 
           <p className="mt-4 border-l-[3px] border-[#D8C2A6] pl-2.5 text-[13px] text-[#8A7263]">
             완성 버튼은 도안 전량을 차감합니다. 도중에 그만두었거나 일부만 사용한 경우에는 직접 수량 입력으로 실제
