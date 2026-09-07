@@ -113,14 +113,6 @@ export const GRID_SIZE_OPTIONS: (OptionItem<GridSizeId> & { beads: number })[] =
     tone: { bg: '#FBF3F6', border: '#C99FB4', text: '#6B3A52' },
     beads: 144,
   },
-  {
-    id: 18,
-    label: '큰 사이즈',
-    hint: '13칸 이상 · 30분 이상',
-    emoji: '⬜',
-    tone: { bg: '#FFF3E4', border: '#DDA55F', text: '#7A4B14' },
-    beads: 289,
-  },
 ];
 
 /** 단계 정의 — 순서를 바꾸려면 이 배열만 수정하면 됩니다. */
