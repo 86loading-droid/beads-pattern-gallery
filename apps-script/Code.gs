@@ -41,11 +41,26 @@ var COLORS = [
 /* 요청 처리                                                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * 주소창이나 <script> 태그로 들어오는 요청.
+ * 아이폰 사파리처럼 다른 사이트로 보내는 POST 요청이 막히는 환경을 위해,
+ * POST로 할 수 있는 일을 여기서도 똑같이 할 수 있게 열어 둡니다.
+ *   ?action=state
+ *   ?action=savePattern&payload={"pattern":{...}}&callback=함수이름
+ */
 function doGet(e) {
-  // 브라우저 주소창에 웹 앱 주소를 그대로 넣어 상태를 확인할 때 씁니다.
-  var key = e && e.parameter ? e.parameter.key : '';
-  if (!checkKey_(key)) return json_({ ok: false, error: 'bad_key' });
-  return json_({ ok: true, state: readState_() });
+  var p = (e && e.parameter) ? e.parameter : {};
+  if (!checkKey_(p.key)) return reply_(p, { ok: false, error: 'bad_key' });
+
+  var body = {};
+  if (p.payload) {
+    try {
+      body = JSON.parse(p.payload);
+    } catch (err) {
+      return reply_(p, { ok: false, error: 'bad_json' });
+    }
+  }
+  return reply_(p, handle_(p.action || 'state', body));
 }
 
 function doPost(e) {
@@ -56,36 +71,40 @@ function doPost(e) {
     return json_({ ok: false, error: 'bad_json' });
   }
   if (!checkKey_(body.key)) return json_({ ok: false, error: 'bad_key' });
+  return json_(handle_(body.action, body));
+}
 
+/** 두 입구가 함께 쓰는 처리부 */
+function handle_(action, body) {
   var lock = LockService.getScriptLock();
   try {
     // 태블릿 여러 대가 같은 순간에 눌러도 수량이 어긋나지 않도록 순서대로 처리합니다.
     lock.waitLock(20000);
   } catch (err) {
-    return json_({ ok: false, error: 'busy' });
+    return { ok: false, error: 'busy' };
   }
 
   try {
-    switch (body.action) {
+    switch (action) {
       case 'state':
-        return json_({ ok: true, state: readState_() });
+        return { ok: true, state: readState_() };
       case 'consume':
-        return json_(consume_(body));
+        return consume_(body);
       case 'removeEntry':
-        return json_(removeEntry_(body.id));
+        return removeEntry_(body.id);
       case 'adjust':
-        return json_(adjust_(body.next));
+        return adjust_(body.next);
       case 'patterns':
-        return json_({ ok: true, list: readPatterns_() });
+        return { ok: true, list: readPatterns_() };
       case 'savePattern':
-        return json_(savePattern_(body.pattern));
+        return savePattern_(body.pattern);
       case 'removePattern':
-        return json_(removePattern_(body.id));
+        return removePattern_(body.id);
       default:
-        return json_({ ok: false, error: 'unknown_action' });
+        return { ok: false, error: 'unknown_action' };
     }
   } catch (err) {
-    return json_({ ok: false, error: String(err) });
+    return { ok: false, error: String(err) };
   } finally {
     lock.releaseLock();
   }
@@ -362,6 +381,19 @@ function nowText_() {
 
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * callback 이 함께 오면 <script> 태그가 그대로 읽을 수 있는 형태로 돌려줍니다.
+ * 함수 이름은 영문·숫자·밑줄만 허용해서 엉뚱한 코드가 끼어들지 못하게 막습니다.
+ */
+function reply_(params, obj) {
+  var name = String((params && params.callback) || '');
+  if (!name) return json_(obj);
+  if (!/^[A-Za-z0-9_]{1,64}$/.test(name)) return json_({ ok: false, error: 'bad_callback' });
+  return ContentService.createTextOutput(name + '(' + JSON.stringify(obj) + ');').setMimeType(
+    ContentService.MimeType.JAVASCRIPT
+  );
 }
 
 /** 편집기에서 한 번 실행하면 시트 세 장이 만들어집니다 */
