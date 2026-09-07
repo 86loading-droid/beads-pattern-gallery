@@ -51,11 +51,15 @@ export function useCustomPatterns() {
     setReady(true);
   }, [hasShared]);
 
-  /** 아직 못 올린 도안을 스프레드시트로 밀어 올린다 */
-  const pushPending = useCallback(async (store: PatternStore) => {
+  /**
+   * 아직 못 올린 도안을 스프레드시트로 밀어 올린다.
+   * 마지막으로 성공한 저장의 응답(최신 전체 목록)을 돌려주어 조회를 한 번 아낀다.
+   */
+  const pushPending = useCallback(async (store: PatternStore): Promise<CustomPattern[] | null> => {
     const ids = readPending();
-    if (!ids.length) return;
+    if (!ids.length) return null;
     const local = readLocal();
+    let latest: CustomPattern[] | null = null;
     for (const id of ids) {
       const p = local.find((x) => x.id === id);
       if (!p) {
@@ -63,9 +67,18 @@ export function useCustomPatterns() {
         continue;
       }
       const res = await store.save(p);
-      if (res.ok) clearPending(id);
-      // 실패하면 그대로 두었다가 다음 새로고침에 다시 시도한다
+      if (res.ok) {
+        clearPending(id);
+        if (res.list) latest = res.list;
+      } else if (res.error === 'network' || res.error === 'unsupported' || res.error === 'busy') {
+        // 연결이 아직이면 여기서 멈춘다 — 다음 새로고침에 다시 시도한다
+        throw new Error('offline');
+      } else {
+        // 서버가 받아 주지 않는 도안이면 계속 붙들고 있지 않는다
+        clearPending(id);
+      }
     }
+    return latest;
   }, []);
 
   const refresh = useCallback(async () => {
@@ -80,9 +93,9 @@ export function useCustomPatterns() {
     if (syncing.current) return;
     syncing.current = true;
     try {
-      await shared.load(); // 연결 확인 — 실패하면 아래 catch로 간다
-      await pushPending(shared);
-      const fresh = await shared.load();
+      // 올릴 것이 있으면 먼저 올린다. 그 응답에 최신 목록이 담겨 오므로 한 번 덜 다녀온다.
+      const pushed = await pushPending(shared);
+      const fresh = pushed ?? (await shared.load());
       const stillPending = readPending();
       const local = readLocal();
       const extras = local.filter((p) => stillPending.includes(p.id));
