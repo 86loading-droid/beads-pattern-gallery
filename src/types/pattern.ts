@@ -10,20 +10,19 @@ export type DifficultyId = 'easy' | 'medium' | 'challenge';
 export type CategoryId = 'animal' | 'vehicle' | 'food' | 'shape' | 'nature' | 'emotion';
 
 /**
- * 격자 크기 묶음 — 고르기 쉽도록 세 단계로만 나눕니다.
+ * 격자 크기 묶음 — 고르기 쉽도록 두 단계로만 나눕니다.
  *  8 = 미니 사이즈 (6×6 · 8×8)
- * 12 = 보통 사이즈 (10×10 · 12×12)
- * 18 = 큰 사이즈 (13칸 이상)
+ * 12 = 보통 사이즈 (10×10 · 12×12, 그보다 큰 도안도 여기에 담깁니다)
  * 도안은 가로·세로 칸 수가 다를 수 있으므로 긴 쪽을 기준으로 담습니다.
  */
-export type GridSizeId = 8 | 12 | 18;
+export type GridSizeId = 8 | 12;
 
-export const GRID_SIZES: GridSizeId[] = [8, 12, 18];
+export const GRID_SIZES: GridSizeId[] = [8, 12];
 
-/** 긴 쪽 칸 수를 담을 수 있는 가장 작은 묶음 */
+/** 긴 쪽 칸 수를 담을 수 있는 묶음 */
 export function sizeOf(rows: string[]): GridSizeId {
   const longest = Math.max(rows.length, ...rows.map((r) => r.length));
-  return GRID_SIZES.find((s) => longest <= s) ?? 18;
+  return longest <= 8 ? 8 : 12;
 }
 
 export type OrAll<T> = T | 'all';
