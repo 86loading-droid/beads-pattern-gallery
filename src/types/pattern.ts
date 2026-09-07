@@ -7,7 +7,7 @@ export type ColorKey = 'A' | 'G' | 'K' | 'R' | 'O' | 'Y' | 'N' | 'S' | 'W' | 'V'
 export type DifficultyId = 'easy' | 'medium' | 'challenge';
 
 /** 주제(카테고리) */
-export type CategoryId = 'animal' | 'vehicle' | 'food' | 'shape' | 'nature' | 'emotion';
+export type CategoryId = 'animal' | 'vehicle' | 'food' | 'shape' | 'nature' | 'emotion' | 'character';
 
 /**
  * 격자 크기 묶음 — 고르기 쉽도록 두 단계로만 나눕니다.
