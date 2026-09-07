@@ -74,8 +74,10 @@ function normalize(raw: unknown): CustomPattern[] {
 /* ------------------------------------------------------------------ */
 
 const STORAGE_KEY = 'beadpatterns.v1';
+/** 아직 스프레드시트에 올리지 못한 도안 — 연결이 돌아오면 자동으로 올립니다 */
+const PENDING_KEY = 'beadpatterns.pending.v1';
 
-function readLocal(): CustomPattern[] {
+export function readLocal(): CustomPattern[] {
   try {
     return normalize(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
   } catch {
@@ -83,12 +85,49 @@ function readLocal(): CustomPattern[] {
   }
 }
 
-function writeLocal(list: CustomPattern[]) {
+export function writeLocal(list: CustomPattern[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   } catch {
     // 저장 공간이 막혀 있어도 화면 동작은 막지 않는다
   }
+}
+
+/** 이 기기에만 있고 아직 못 올린 도안을 기록해 둔다 */
+export function readPending(): string[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+    return Array.isArray(raw) ? raw.map((x) => String(x)) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePending(ids: string[]) {
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(ids));
+  } catch {
+    // 무시 — 다음 저장 때 다시 시도한다
+  }
+}
+
+export function markPending(id: string) {
+  const ids = readPending();
+  if (!ids.includes(id)) writePending([...ids, id]);
+}
+
+export function clearPending(id: string) {
+  writePending(readPending().filter((x) => x !== id));
+}
+
+/** 이 기기 저장소에 한 벌 남겨 둔다 — 연결이 끊겨도 만든 도안을 잃지 않는다 */
+export function mirrorLocal(pattern: CustomPattern) {
+  writeLocal([pattern, ...readLocal().filter((p) => p.id !== pattern.id)]);
+}
+
+export function dropLocal(id: string) {
+  writeLocal(readLocal().filter((p) => p.id !== id));
+  clearPending(id);
 }
 
 export const localPatternStore: PatternStore = {
@@ -169,10 +208,18 @@ export function createSheetPatternStore(url: string, key: string): PatternStore 
 
 /* ------------------------------------------------------------------ */
 
-/** 배포본에 스프레드시트 주소가 있으면 공유 저장, 없으면 이 기기 저장 */
-export function pickPatternStore(): PatternStore {
+/**
+ * 배포본에 스프레드시트 주소가 있으면 공유 저장소를 돌려주고, 없으면 null.
+ * null이면 이 기기 저장소만 씁니다.
+ */
+export function pickSharedPatternStore(): PatternStore | null {
   const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
   const url = (env.VITE_STOCK_API ?? '').trim();
   const key = (env.VITE_STOCK_KEY ?? '').trim();
-  return url ? createSheetPatternStore(url, key) : localPatternStore;
+  return url ? createSheetPatternStore(url, key) : null;
+}
+
+/** 배포본에 스프레드시트 주소가 있으면 공유 저장, 없으면 이 기기 저장 */
+export function pickPatternStore(): PatternStore {
+  return pickSharedPatternStore() ?? localPatternStore;
 }
