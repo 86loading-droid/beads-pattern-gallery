@@ -103,7 +103,7 @@ export default function PatternDetail({ pattern, stock, shortages, onConsume, on
         <div className="rounded-2xl border-2 border-[#EADBC6] bg-white p-3">
           <PatternGrid rows={pattern.rows} title={pattern.title} large numbered />
           <p className="mt-2 text-center text-[11px] text-[#8A7263]">
-            가로 {pattern.cols}칸 · 세로 {pattern.rowCount}칸 · 다섯 칸마다 진한 선
+            가로 {pattern.cols}칸 · 세로 {pattern.rowCount}칸
           </p>
         </div>
 

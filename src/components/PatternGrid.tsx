@@ -2,11 +2,11 @@ import type { ReactElement } from 'react';
 import { COLOR_HEX } from '../data/inventory';
 import type { ColorKey } from '../types/pattern';
 
-/** 빈칸도 눈에 보이도록 아주 옅은 모눈 바탕을 깔아 준다 */
-const EMPTY_BG = '#FCF7EE';
-const LINE = 'rgba(93,64,55,0.20)';
-/** 다섯 칸마다 진한 선 — 아이들이 칸을 세기 쉽게 한다 */
-const LINE5 = 'rgba(93,64,55,0.55)';
+/** 빈칸 바탕 — 화이트 비즈와 헷갈리지 않도록 한 단계 어두운 베이지를 쓴다 */
+const EMPTY_BG = '#E4DCCB';
+const EMPTY_LINE = 'rgba(93,64,55,0.22)';
+/** 색이 칠해진 칸의 테두리 — 같은 색이 이어져도 칸이 구분되도록 모든 칸에 똑같이 둔다 */
+const FILLED_LINE = 'rgba(93,64,55,0.32)';
 
 interface Props {
   rows: string[];
@@ -18,14 +18,16 @@ interface Props {
 
 /**
  * 도안 픽셀 격자 렌더러 — 갤러리 썸네일과 상세 화면이 함께 사용.
- * 색이 없는 칸도 테두리와 옅은 바탕으로 그려서, 학생이 몇 번째 칸인지 세어 가며
- * 따라 만들 수 있게 합니다. 다섯 칸마다 선을 진하게 해 세기 쉽도록 했습니다.
+ *
+ * 칸마다 사이를 띄우고 테두리를 둘러, 같은 색이 이어지는 자리에서도 한 칸 한 칸이
+ * 따로 보이게 합니다. 모든 칸을 똑같은 굵기로 그려서 특정 줄만 도드라지지 않습니다.
  */
 export default function PatternGrid({ rows, title, large = false, numbered = false }: Props) {
   const width = rows[0].length;
   const height = rows.length;
   const columns = numbered ? width + 1 : width;
   const numberClass = large ? 'text-[11px]' : 'text-[8px]';
+  const round = large ? 'rounded-[3px]' : 'rounded-[2px]';
   const cells: ReactElement[] = [];
 
   const numberCell = (key: string, label: number) => (
@@ -48,19 +50,13 @@ export default function PatternGrid({ rows, title, large = false, numbered = fal
     for (let c = 0; c < width; c += 1) {
       const ch = rows[r][c];
       const filled = ch !== '.';
-      const heavyRight = (c + 1) % 5 === 0 || c === width - 1;
-      const heavyBottom = (r + 1) % 5 === 0 || r === height - 1;
       cells.push(
         <span
           key={`${r}-${c}`}
-          className="aspect-square"
+          className={`aspect-square ${round}`}
           style={{
             backgroundColor: filled ? COLOR_HEX[ch as ColorKey] : EMPTY_BG,
-            borderRight: `${heavyRight ? 2 : 1}px solid ${heavyRight ? LINE5 : LINE}`,
-            borderBottom: `${heavyBottom ? 2 : 1}px solid ${heavyBottom ? LINE5 : LINE}`,
-            borderLeft: c === 0 ? `2px solid ${LINE5}` : undefined,
-            borderTop: r === 0 ? `2px solid ${LINE5}` : undefined,
-            boxShadow: filled && large ? 'inset 0 0 0 2px rgba(255,255,255,0.3)' : undefined,
+            boxShadow: `inset 0 0 0 1px ${filled ? FILLED_LINE : EMPTY_LINE}`,
           }}
         />,
       );
@@ -72,7 +68,10 @@ export default function PatternGrid({ rows, title, large = false, numbered = fal
       role="img"
       aria-label={`${title} 도안 가로 ${width}칸 세로 ${height}칸`}
       className="grid select-none"
-      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      style={{
+        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+        gap: large ? '3px' : '1.5px',
+      }}
     >
       {cells}
     </div>
