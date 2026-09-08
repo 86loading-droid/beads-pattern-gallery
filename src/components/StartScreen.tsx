@@ -8,7 +8,8 @@ import {
   STEPS,
   type StepKey,
 } from '../data/selectionOptions';
-import { ALL_SELECTED, type PatternSelection } from '../types/pattern';
+import { ALL_SELECTED, type Pattern, type PatternSelection } from '../types/pattern';
+import { COLOR_HEX, formatCount } from '../data/inventory';
 
 interface StartScreenProps {
   /** 3단계 선택이 끝나면 호출됩니다. */
@@ -18,7 +19,43 @@ interface StartScreenProps {
    * 갤러리 데이터가 준비되면 filterPatterns(...)를 감싸 넘기세요.
    */
   countFor?: (partial: PatternSelection) => number;
+  /** 첫 단계 위에 보여 줄 오늘의 추천 도안 */
+  recommended?: Pattern[];
+  /** 추천 도안을 누르면 바로 그 도안을 엽니다 */
+  onOpen?: (id: string) => void;
 }
+
+/** 추천 카드 안에 들어가는 작은 격자 — 칸마다 사이를 띄워 한 칸씩 보이게 한다 */
+function TinyGrid({ rows, title }: { rows: string[]; title: string }) {
+  const width = rows[0].length;
+  return (
+    <div
+      role="img"
+      aria-label={`${title} 도안 미리보기`}
+      className="grid w-full gap-[1.5px] rounded-lg bg-white p-1.5"
+      style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))` }}
+    >
+      {rows.flatMap((row, y) =>
+        row.split('').map((ch, x) => (
+          <span
+            key={`${y}-${x}`}
+            className="aspect-square rounded-[2px]"
+            style={{
+              backgroundColor: ch === '.' ? '#E4DCCB' : COLOR_HEX[ch as keyof typeof COLOR_HEX],
+              boxShadow: `inset 0 0 0 1px rgba(93,64,55,${ch === '.' ? '0.22' : '0.32'})`,
+            }}
+          />
+        )),
+      )}
+    </div>
+  );
+}
+
+const LEVEL_LABEL: Record<string, string> = {
+  easy: '쉬워요',
+  medium: '보통이에요',
+  challenge: '도전해요',
+};
 
 /** 6×6 미니 픽셀 미리보기 */
 function MiniPreview({ rows, label }: { rows: string[]; label: string }) {
@@ -117,7 +154,7 @@ function OptionCard({
   );
 }
 
-export default function StartScreen({ onComplete, countFor }: StartScreenProps) {
+export default function StartScreen({ onComplete, countFor, recommended = [], onOpen }: StartScreenProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<PatternSelection>(ALL_SELECTED);
 
@@ -164,6 +201,35 @@ export default function StartScreen({ onComplete, countFor }: StartScreenProps) 
         </h1>
         <p className="mt-1 text-sm text-[#8D6E63]">{step.subtitle}</p>
       </header>
+
+      {/* 오늘의 추천 — 고르기 어려워하는 아이에게 바로 건넬 수 있는 세 가지 */}
+      {stepIndex === 0 && recommended.length > 0 && onOpen ? (
+        <section aria-label="오늘의 추천 도안" className="mb-6">
+          <h2 className="text-lg font-bold text-[#5D4037]">오늘의 추천 도안</h2>
+          <p className="mt-0.5 text-sm text-[#8D6E63]">
+            고르기 어려우면 여기서 바로 시작해도 좋아요. 매일 바뀝니다.
+          </p>
+          <ul className="mt-3 grid grid-cols-3 gap-2 sm:gap-3">
+            {recommended.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(p.id)}
+                  className="flex h-full w-full flex-col gap-1.5 rounded-2xl border-[3px] border-[#E7D8C4] bg-white p-2
+                             text-left transition hover:-translate-y-0.5 hover:border-[#C9A87C] hover:shadow-lg
+                             focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#5D4037]/30 sm:gap-2 sm:p-3"
+                >
+                  <TinyGrid rows={p.rows} title={p.title} />
+                  <span className="text-sm font-bold leading-tight text-[#5D4037] sm:text-base">{p.title}</span>
+                  <span className="mt-auto text-[11px] leading-tight text-[#8A7263] sm:text-xs">
+                    {LEVEL_LABEL[p.difficulty] ?? ''} · {p.cols}×{p.rowCount}칸 · 비즈 {formatCount(p.beads)}개
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* 진행 표시 — 숫자·색·문장 3중 안내 */}
       <ol
