@@ -25,6 +25,10 @@ export const BEAD_COLORS: BeadColor[] = [
   { key: 'V', name: '연보라', hex: '#B9A0DC', init: 3864 },
   { key: 'P', name: '찐핑', hex: '#E8437F', init: 10231 },
   { key: 'T', name: '투명', hex: '#DDE5E8', init: 9000 },
+  // 뒤에 추가한 색 — 수량은 재고 현황 화면에서 직접 넣습니다
+  { key: 'B', name: '파랑', hex: '#2E63C8', init: 0 },
+  { key: 'C', name: '하늘', hex: '#7EC8E8', init: 0 },
+  { key: 'F', name: '연핑크', hex: '#F7B6CC', init: 0 },
 ];
 
 export const COLOR_HEX = Object.fromEntries(BEAD_COLORS.map((c) => [c.key, c.hex])) as Record<ColorKey, string>;
