@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { ArrowLeft, Check, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Check, LayoutGrid, SlidersHorizontal } from 'lucide-react';
 import {
   CATEGORY_OPTIONS,
   DIFFICULTY_OPTIONS,
@@ -23,6 +23,10 @@ interface StartScreenProps {
   recommended?: Pattern[];
   /** 추천 도안을 누르면 바로 그 도안을 엽니다 */
   onOpen?: (id: string) => void;
+  /** 추천 도안 아래에 붙는 설명 한 줄 */
+  recommendNote?: string;
+  /** 강사가 추천 도안을 직접 고르러 갑니다 */
+  onPick?: () => void;
 }
 
 /** 추천 카드 안에 들어가는 작은 격자 — 칸마다 사이를 띄워 한 칸씩 보이게 한다 */
@@ -154,7 +158,14 @@ function OptionCard({
   );
 }
 
-export default function StartScreen({ onComplete, countFor, recommended = [], onOpen }: StartScreenProps) {
+export default function StartScreen({
+  onComplete,
+  countFor,
+  recommended = [],
+  onOpen,
+  recommendNote,
+  onPick,
+}: StartScreenProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<PatternSelection>(ALL_SELECTED);
 
@@ -204,10 +215,23 @@ export default function StartScreen({ onComplete, countFor, recommended = [], on
 
       {/* 오늘의 추천 — 고르기 어려워하는 아이에게 바로 건넬 수 있는 세 가지 */}
       {stepIndex === 0 && recommended.length > 0 && onOpen ? (
-        <section aria-label="오늘의 추천 도안" className="mb-6">
-          <h2 className="text-lg font-bold text-[#5D4037]">오늘의 추천 도안</h2>
+        <section aria-label="추천 도안" className="mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-bold text-[#5D4037]">추천 도안</h2>
+            {onPick ? (
+              <button
+                type="button"
+                onClick={onPick}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-full border-2 border-[#D8C2A6] px-3 py-1
+                           text-xs font-bold text-[#5D4037] hover:bg-[#F5EADB] focus-visible:outline-none
+                           focus-visible:ring-4 focus-visible:ring-[#5D4037]/30"
+              >
+                <SlidersHorizontal size={14} aria-hidden="true" /> 직접 고르기
+              </button>
+            ) : null}
+          </div>
           <p className="mt-0.5 text-sm text-[#8D6E63]">
-            고르기 어려우면 여기서 바로 시작해도 좋아요. 매일 바뀝니다.
+            {recommendNote ?? '고르기 어려우면 여기서 바로 시작해도 좋아요.'}
           </p>
           <ul className="mt-3 grid grid-cols-3 gap-2 sm:gap-3">
             {recommended.map((p) => (
