@@ -35,7 +35,7 @@ function resize(grid: string[], cols: number, rows: number): string[] {
 
 /**
  * 도안 직접 입력 화면.
- * 칸을 누르거나 손가락을 끌어 색을 칠합니다. 색은 보유 12색만 쓸 수 있고,
+ * 칸을 누르거나 손가락을 끌어 색을 칠합니다. 색은 보유 색만 쓸 수 있고,
  * 칠하는 동안 필요한 비즈 수와 재고 부족 여부를 바로 보여 줍니다.
  */
 export default function PatternEditor({

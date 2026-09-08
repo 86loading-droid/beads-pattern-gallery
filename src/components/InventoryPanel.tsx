@@ -25,7 +25,11 @@ export default function InventoryPanel({ stock, logs, usedTotal, onAdjust, onRem
   const [sortLow, setSortLow] = useState(true);
   const [msg, setMsg] = useState<{ bad: boolean; text: string } | null>(null);
 
-  const max = Math.max(...BEAD_COLORS.map((c) => c.init));
+  // 막대 길이의 기준 — 처음 수량이 0인 색(뒤에 추가한 색)도 제대로 보이도록 지금 수량까지 함께 본다
+  const max = Math.max(
+    1,
+    ...BEAD_COLORS.map((c) => Math.max(c.init, stock[c.key] ?? 0)),
+  );
   const total = (Object.values(stock) as number[]).reduce((a, b) => a + b, 0);
   const editing = draft !== null;
 
@@ -102,7 +106,8 @@ export default function InventoryPanel({ stock, logs, usedTotal, onAdjust, onRem
           const have = stock[c.key] ?? 0;
           const value = editing ? (draft?.[c.key] ?? have) : have;
           const diff = value - have;
-          const ratio = c.init ? Math.round((have / c.init) * 100) : 0;
+          // 처음 수량이 없는 색은 견줄 대상이 없으므로 비율을 비워 둔다
+          const ratio = c.init ? Math.round((have / c.init) * 100) : null;
           return (
             <div
               key={c.key}
@@ -146,12 +151,16 @@ export default function InventoryPanel({ stock, logs, usedTotal, onAdjust, onRem
                 ) : (
                   <>
                     {formatCount(have)}
-                    <small className="block text-[11px] font-normal text-[#8A7263]">처음 {formatCount(c.init)}</small>
+                    <small className="block text-[11px] font-normal text-[#8A7263]">
+                      {c.init ? `처음 ${formatCount(c.init)}` : '직접 입력'}
+                    </small>
                   </>
                 )}
               </span>
 
-              <span className="text-right font-bold tabular-nums text-[#8A7263]">{editing ? '' : `${ratio}%`}</span>
+              <span className="text-right font-bold tabular-nums text-[#8A7263]">
+                {editing ? '' : ratio === null ? '—' : `${ratio}%`}
+              </span>
             </div>
           );
         })}
