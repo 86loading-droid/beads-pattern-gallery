@@ -10,6 +10,7 @@ import { useInventory } from './hooks/useInventory';
 import { useCustomPatterns } from './hooks/useCustomPatterns';
 import { useBackGuard } from './hooks/useBackGuard';
 import { PATTERNS } from './data/patterns';
+import { pickRecommended } from './data/recommend';
 import { COLOR_NAME, formatCount } from './data/inventory';
 import {
   ALL_SELECTED,
@@ -71,6 +72,13 @@ export default function App() {
   );
 
   const countFor = useCallback((partial: PatternSelection) => filterPatterns(all, partial).length, [all]);
+
+  /** 오늘의 추천 3종 — 재고가 되는 것 중에서 날짜로 정하므로 모든 태블릿이 같은 것을 봅니다 */
+  const shortagesFor = inv.shortagesFor;
+  const recommended = useMemo(
+    () => pickRecommended(all, (p) => shortagesFor(p.need).length === 0),
+    [all, shortagesFor],
+  );
   const list = useMemo(() => filterPatterns(all, selection), [all, selection]);
   const open = openId ? all.find((p) => p.id === openId) ?? null : null;
 
@@ -156,6 +164,11 @@ export default function App() {
         {banner}
         <StartScreen
           countFor={countFor}
+          recommended={recommended}
+          onOpen={(id) => {
+            setOpenId(id);
+            setView('detail');
+          }}
           onComplete={(next) => {
             setSelection(next);
             setView('gallery');
