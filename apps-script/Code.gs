@@ -7,6 +7,7 @@
  *   재고    — 색상키 | 색상명 | 수량      (교사가 시트에서 직접 고쳐도 앱에 반영됩니다)
  *   소비기록 — 기록ID | 시각 | 구분 | 도안 | 수량 | 색상별사용
  *   도안    — 도안ID | 이름 | 주제 | 가로 | 세로 | 칸 | 만든시각   (앱에서 직접 만든 도안)
+ *   설정    — 이름 | 값                                        (추천 도안 목록 등 공용 설정)
  */
 
 /** 이 스크립트가 쓰는 스프레드시트 — 독립 프로젝트로 배포해도 같은 시트를 봅니다 */
@@ -19,6 +20,7 @@ function book_() {
 var SHEET_STOCK = '재고';
 var SHEET_LOG = '소비기록';
 var SHEET_PATTERN = '도안';
+var SHEET_SETTING = '설정';
 var LOG_KEEP = 300; // 소비기록 보관 건수 — 넘으면 오래된 것부터 지웁니다
 
 /** 보유 색상과 최초 수량 — 색을 추가하려면 여기에 한 줄 넣으면 됩니다 */
@@ -100,6 +102,10 @@ function handle_(action, body) {
         return savePattern_(body.pattern);
       case 'removePattern':
         return removePattern_(body.id);
+      case 'settings':
+        return { ok: true, settings: readSettings_() };
+      case 'setSetting':
+        return setSetting_(body.name, body.value);
       default:
         return { ok: false, error: 'unknown_action' };
     }
@@ -278,6 +284,48 @@ function removePattern_(id) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 설정 — 모든 태블릿이 함께 보는 값 (예: 추천 도안 목록)                 */
+/* ------------------------------------------------------------------ */
+
+function settingSheet_() {
+  var ss = book_();
+  var sheet = ss.getSheetByName(SHEET_SETTING);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_SETTING);
+    sheet.getRange(1, 1, 1, 2).setValues([['이름', '값']]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function readSettings_() {
+  var values = settingSheet_().getDataRange().getValues();
+  var out = {};
+  for (var r = 1; r < values.length; r++) {
+    var name = String(values[r][0] || '').trim();
+    if (name) out[name] = String(values[r][1] == null ? '' : values[r][1]);
+  }
+  return out;
+}
+
+/** 같은 이름이 있으면 그 줄을 고쳐 쓰고, 없으면 새 줄로 넣는다 */
+function setSetting_(name, value) {
+  var key = String(name || '').trim();
+  if (!key) return { ok: false, error: 'empty' };
+  var text = String(value == null ? '' : value);
+  var sheet = settingSheet_();
+  var values = sheet.getDataRange().getValues();
+  for (var r = 1; r < values.length; r++) {
+    if (String(values[r][0]).trim() === key) {
+      sheet.getRange(r + 1, 2).setValue(text);
+      return { ok: true, settings: readSettings_() };
+    }
+  }
+  sheet.appendRow([key, text]);
+  return { ok: true, settings: readSettings_() };
+}
+
+/* ------------------------------------------------------------------ */
 /* 시트 입출력                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -396,10 +444,11 @@ function reply_(params, obj) {
   );
 }
 
-/** 편집기에서 한 번 실행하면 시트 세 장이 만들어집니다 */
+/** 편집기에서 한 번 실행하면 시트 네 장이 만들어집니다 */
 function 초기설정() {
   stockSheet_();
   logSheet_();
   patternSheet_();
-  book_().toast('재고 · 소비기록 · 도안 시트를 준비했습니다.');
+  settingSheet_();
+  book_().toast('재고 · 소비기록 · 도안 · 설정 시트를 준비했습니다.');
 }
