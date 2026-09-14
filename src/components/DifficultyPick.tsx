@@ -1,22 +1,36 @@
 import { ArrowLeft, LayoutGrid } from 'lucide-react';
-import PatternGrid from './PatternGrid';
+import PatternStrip from './PatternStrip';
 import { CATEGORY_OPTIONS, DIFFICULTY_OPTIONS } from '../data/selectionOptions';
-import type { CategoryId, DifficultyId, Pattern } from '../types/pattern';
+import type { CategoryId, ColorKey, DifficultyId, Pattern } from '../types/pattern';
 
 interface Props {
   /** 고른 주제 — 'all'이면 전체 */
   category: CategoryId | 'all';
   /** 그 주제에 속한 도안 */
   patterns: Pattern[];
+  shortagesFor: (need: Partial<Record<ColorKey, number>>) => ColorKey[];
+  /** 도안을 바로 엽니다 */
+  onOpen: (id: string) => void;
+  /** 그 난이도를 세로로 크게 훑어봅니다 */
   onPick: (difficulty: DifficultyId | 'all') => void;
   onBack: () => void;
 }
 
 /**
  * 주제를 고른 뒤 난이도를 고르는 화면.
- * 각 난이도에 실제로 어떤 도안이 있는지 미리 보여 주어, 고르기 전에 짐작할 수 있게 합니다.
+ *
+ * 난이도마다 그 안의 도안을 가로 띠로 늘어놓아, 화면을 옮기지 않고도 좌우로 넘기며
+ * 바로 확인하고 고를 수 있게 합니다. 난이도를 고르는 일과 도안을 고르는 일을
+ * 한 화면에서 끝낼 수 있어야 아이가 기다리지 않습니다.
  */
-export default function DifficultyPick({ category, patterns, onPick, onBack }: Props) {
+export default function DifficultyPick({
+  category,
+  patterns,
+  shortagesFor,
+  onOpen,
+  onPick,
+  onBack,
+}: Props) {
   const found = CATEGORY_OPTIONS.find((c) => c.id === category);
   const name = found ? found.label : '전체';
 
@@ -25,29 +39,26 @@ export default function DifficultyPick({ category, patterns, onPick, onBack }: P
       <p className="text-sm font-semibold tracking-wide text-[#A1887F]">
         {found ? `${found.emoji} ${name}` : '전체 도안'} · {patterns.length}개
       </p>
-      <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">얼마나 어렵게 할까요?</h1>
-      <p className="mt-1 text-sm text-[#8D6E63]">난이도를 고르면 도안을 하나씩 넘겨 보며 고를 수 있어요.</p>
+      <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">어떤 도안을 만들까요?</h1>
+      <p className="mt-1 text-sm text-[#8D6E63]">
+        난이도마다 도안이 늘어서 있어요. 옆으로 넘겨 보고 마음에 드는 도안을 누르세요.
+      </p>
 
-      <ul className="mt-4 grid gap-3">
+      <div className="mt-4 space-y-4">
         {DIFFICULTY_OPTIONS.map((d) => {
           const mine = patterns.filter((p) => p.difficulty === d.id);
-          const shown = mine.slice(0, 4);
           return (
-            <li key={d.id}>
-              <button
-                type="button"
-                disabled={mine.length === 0}
-                onClick={() => onPick(d.id)}
-                className="flex w-full items-center gap-3 rounded-2xl border-[3px] p-3 text-left transition
-                           disabled:opacity-40 hover:-translate-y-0.5 hover:shadow-lg disabled:hover:translate-y-0
-                           disabled:hover:shadow-none focus-visible:outline-none focus-visible:ring-4
-                           focus-visible:ring-[#5D4037]/30"
-                style={{ backgroundColor: d.tone.bg, borderColor: d.tone.border }}
-              >
+            <section
+              key={d.id}
+              aria-label={`${d.label} 도안`}
+              className="rounded-2xl border-[3px] p-3"
+              style={{ backgroundColor: d.tone.bg, borderColor: d.tone.border }}
+            >
+              <div className="mb-2.5 flex flex-wrap items-center gap-2">
                 <span aria-hidden="true" className="text-2xl leading-none">
                   {d.emoji}
                 </span>
-                <span className="flex min-w-0 flex-col">
+                <span className="flex flex-col">
                   <span className="text-lg font-bold" style={{ color: d.tone.text }}>
                     {d.label}
                   </span>
@@ -56,24 +67,31 @@ export default function DifficultyPick({ category, patterns, onPick, onBack }: P
                   </span>
                 </span>
 
-                <span className="ml-auto flex shrink-0 items-center gap-1.5">
-                  {shown.map((p) => (
-                    <span key={p.id} className="w-10 rounded bg-white/85 p-0.5 sm:w-12">
-                      <PatternGrid rows={p.rows} title={p.title} />
-                    </span>
-                  ))}
-                  <span
-                    className="rounded-full bg-white/85 px-2 py-0.5 text-xs font-bold"
+                {mine.length ? (
+                  <button
+                    type="button"
+                    onClick={() => onPick(d.id)}
+                    className="ml-auto rounded-full bg-white/90 px-3 py-1 text-xs font-bold
+                               focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#5D4037]/30"
                     style={{ color: d.tone.text }}
                   >
-                    {mine.length}개
-                  </span>
-                </span>
-              </button>
-            </li>
+                    {mine.length}개 크게 보기
+                  </button>
+                ) : null}
+              </div>
+
+              {mine.length ? (
+                <PatternStrip
+                  patterns={mine}
+                  shortagesFor={shortagesFor}
+                  onOpen={onOpen}
+                  label={`${d.label} 도안 목록`}
+                />
+              ) : null}
+            </section>
           );
         })}
-      </ul>
+      </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <button
@@ -91,7 +109,7 @@ export default function DifficultyPick({ category, patterns, onPick, onBack }: P
                      hover:bg-[#5D4037] hover:text-white focus-visible:outline-none focus-visible:ring-4
                      focus-visible:ring-[#5D4037]/30"
         >
-          <LayoutGrid size={18} aria-hidden="true" /> 난이도 상관없이 모두 보기
+          <LayoutGrid size={18} aria-hidden="true" /> 난이도 상관없이 모두 크게 보기
         </button>
       </div>
     </main>
