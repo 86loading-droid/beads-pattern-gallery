@@ -1,8 +1,8 @@
 // 도안·재고 공통 타입 정의
 
 /**
- * 보유 비즈 색상 키 (재고 15색)
- * B = 파랑, C = 하늘, F = 연핑크 — 뒤에 추가한 세 가지입니다.
+ * 보유 비즈 색상 키 (재고 16색)
+ * B = 파랑, C = 하늘, F = 연핑크, D = 갈색 — 뒤에 추가한 색입니다.
  */
 export type ColorKey =
   | 'A'
@@ -19,7 +19,8 @@ export type ColorKey =
   | 'T'
   | 'B'
   | 'C'
-  | 'F';
+  | 'F'
+  | 'D';
 
 /** 난이도: 사용 색상 수 기준으로 산출 */
 export type DifficultyId = 'easy' | 'medium' | 'challenge';
