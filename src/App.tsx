@@ -32,6 +32,8 @@ export default function App() {
   /** 지금 고른 주제와 난이도 — 'all'이면 가리지 않음 */
   const [pickedCategory, setPickedCategory] = useState<CategoryId | 'all'>('all');
   const [pickedDifficulty, setPickedDifficulty] = useState<DifficultyId | 'all'>('all');
+  /** 도안을 어느 화면에서 열었는지 — 닫을 때 그 자리로 돌아가기 위해 */
+  const [cameFrom, setCameFrom] = useState<View>('browse');
   const [openId, setOpenId] = useState<string | null>(null);
   /** 편집기에 넘길 원본 — null이면 빈 도안부터 시작 */
   const [editBase, setEditBase] = useState<{ source: PatternSource; copy: boolean } | null>(null);
@@ -58,7 +60,11 @@ export default function App() {
    * 앱 안에서 한 단계만 돌아갑니다. 도안을 만드는 중에는 잠가 둡니다.
    */
   const handleBack = useCallback(() => {
-    if (view === 'detail' || view === 'stock') {
+    if (view === 'detail') {
+      setView(cameFrom);
+      return true;
+    }
+    if (view === 'stock') {
       setView('browse');
       return true;
     }
@@ -76,7 +82,7 @@ export default function App() {
     }
     say('첫 화면이에요. 화면 안의 버튼으로 움직여 주세요.');
     return true;
-  }, [say, view]);
+  }, [cameFrom, say, view]);
   useBackGuard(handleBack);
 
   // 직접 만든 도안을 앞에 두어 최근 만든 것이 먼저 보이게 한다
@@ -237,6 +243,7 @@ export default function App() {
           onPickRecommend={() => setView('recommend')}
           onOpen={(id) => {
             setOpenId(id);
+            setCameFrom('start');
             setView('detail');
           }}
           onPickCategory={(id) => {
@@ -257,6 +264,12 @@ export default function App() {
         <DifficultyPick
           category={pickedCategory}
           patterns={inCategory}
+          shortagesFor={shortagesFor}
+          onOpen={(id) => {
+            setOpenId(id);
+            setCameFrom('difficulty');
+            setView('detail');
+          }}
           onPick={(d) => {
             setPickedDifficulty(d);
             setView('browse');
@@ -279,6 +292,7 @@ export default function App() {
           shortagesFor={shortagesFor}
           onOpen={(id) => {
             setOpenId(id);
+            setCameFrom('browse');
             setView('detail');
           }}
           onBack={() => setView('difficulty')}
@@ -343,7 +357,7 @@ export default function App() {
           shortages={inv.shortagesFor(open.need)}
           onConsume={inv.consume}
           onEdit={() => startFrom(open, !open.custom)}
-          onBack={() => setView('browse')}
+          onBack={() => setView(cameFrom)}
         />
       </>
     );
