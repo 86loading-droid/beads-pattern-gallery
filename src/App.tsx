@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Home } from 'lucide-react';
-import StartScreen from './components/StartScreen';
+import CategoryHome from './components/CategoryHome';
+import DifficultyPick from './components/DifficultyPick';
+import PatternBrowse from './components/PatternBrowse';
 import PatternDetail from './components/PatternDetail';
 import PatternEditor from './components/PatternEditor';
 import PatternGrid from './components/PatternGrid';
@@ -16,19 +18,20 @@ import { PATTERNS } from './data/patterns';
 import { pickRecommended } from './data/recommend';
 import { COLOR_NAME, formatCount } from './data/inventory';
 import {
-  ALL_SELECTED,
   derivePattern,
-  filterPatterns,
+  type CategoryId,
+  type DifficultyId,
   type Pattern,
-  type PatternSelection,
   type PatternSource,
 } from './types/pattern';
 
-type View = 'start' | 'gallery' | 'detail' | 'stock' | 'editor' | 'recommend';
+type View = 'start' | 'difficulty' | 'browse' | 'detail' | 'stock' | 'editor' | 'recommend';
 
 export default function App() {
   const [view, setView] = useState<View>('start');
-  const [selection, setSelection] = useState<PatternSelection>(ALL_SELECTED);
+  /** 지금 고른 주제와 난이도 — 'all'이면 가리지 않음 */
+  const [pickedCategory, setPickedCategory] = useState<CategoryId | 'all'>('all');
+  const [pickedDifficulty, setPickedDifficulty] = useState<DifficultyId | 'all'>('all');
   const [openId, setOpenId] = useState<string | null>(null);
   /** 편집기에 넘길 원본 — null이면 빈 도안부터 시작 */
   const [editBase, setEditBase] = useState<{ source: PatternSource; copy: boolean } | null>(null);
@@ -56,15 +59,14 @@ export default function App() {
    */
   const handleBack = useCallback(() => {
     if (view === 'detail' || view === 'stock') {
-      setView('gallery');
+      setView('browse');
       return true;
     }
-    if (view === 'recommend') {
-      setView('start');
+    if (view === 'browse') {
+      setView('difficulty');
       return true;
     }
-    if (view === 'gallery') {
-      setSelection(ALL_SELECTED);
+    if (view === 'difficulty' || view === 'recommend') {
       setView('start');
       return true;
     }
@@ -83,7 +85,19 @@ export default function App() {
     [mine.list],
   );
 
-  const countFor = useCallback((partial: PatternSelection) => filterPatterns(all, partial).length, [all]);
+  /** 고른 주제에 속한 도안 */
+  const inCategory = useMemo(
+    () => (pickedCategory === 'all' ? all : all.filter((p) => p.category === pickedCategory)),
+    [all, pickedCategory],
+  );
+  /** 거기서 다시 난이도로 거른 도안 — 넘겨 보기 화면에 들어갑니다 */
+  const browseList = useMemo(
+    () =>
+      pickedDifficulty === 'all'
+        ? inCategory
+        : inCategory.filter((p) => p.difficulty === pickedDifficulty),
+    [inCategory, pickedDifficulty],
+  );
 
   /**
    * 첫 화면에 걸 추천 도안.
@@ -99,7 +113,6 @@ export default function App() {
     if (chosen.length) return chosen;
     return pickRecommended(all, (p) => shortagesFor(p.need).length === 0);
   }, [all, chosenIds, shortagesFor]);
-  const list = useMemo(() => filterPatterns(all, selection), [all, selection]);
   const open = openId ? all.find((p) => p.id === openId) ?? null : null;
 
   /** 어느 화면에서든 첫 화면으로 — 도안을 만드는 중이면 한 번 더 확인한다 */
@@ -115,7 +128,8 @@ export default function App() {
     leaveEditor.current = false;
     setEditBase(null);
     setOpenId(null);
-    setSelection(ALL_SELECTED);
+    setPickedCategory('all');
+    setPickedDifficulty('all');
     setHomeNonce((n) => n + 1);
     setView('start');
   }, [say, view]);
@@ -197,7 +211,7 @@ export default function App() {
           onDelete={mine.remove}
           onBack={() => {
             setEditBase(null);
-            setView('gallery');
+            setView('browse');
           }}
         />
       </>
@@ -209,9 +223,9 @@ export default function App() {
       <>
         {header}
         {banner}
-        <StartScreen
+        <CategoryHome
           key={homeNonce}
-          countFor={countFor}
+          all={all}
           recommended={recommended}
           recommendNote={
             chosenIds.length
@@ -220,15 +234,55 @@ export default function App() {
                 : '강사가 고른 도안입니다. 지금은 이 기기에만 저장돼 있어요.'
               : '고르기 어려우면 여기서 바로 시작해도 좋아요. 매일 바뀝니다.'
           }
-          onPick={() => setView('recommend')}
+          onPickRecommend={() => setView('recommend')}
           onOpen={(id) => {
             setOpenId(id);
             setView('detail');
           }}
-          onComplete={(next) => {
-            setSelection(next);
-            setView('gallery');
+          onPickCategory={(id) => {
+            setPickedCategory(id);
+            setPickedDifficulty('all');
+            setView('difficulty');
           }}
+        />
+      </>
+    );
+  }
+
+  if (view === 'difficulty') {
+    return (
+      <>
+        {header}
+        {banner}
+        <DifficultyPick
+          category={pickedCategory}
+          patterns={inCategory}
+          onPick={(d) => {
+            setPickedDifficulty(d);
+            setView('browse');
+          }}
+          onBack={() => setView('start')}
+        />
+      </>
+    );
+  }
+
+  if (view === 'browse') {
+    return (
+      <>
+        {header}
+        {banner}
+        <PatternBrowse
+          patterns={browseList}
+          category={pickedCategory}
+          difficulty={pickedDifficulty}
+          shortagesFor={shortagesFor}
+          onOpen={(id) => {
+            setOpenId(id);
+            setView('detail');
+          }}
+          onBack={() => setView('difficulty')}
+          onNewPattern={startNew}
         />
       </>
     );
@@ -272,7 +326,7 @@ export default function App() {
           usedTotal={inv.usedTotal}
           onAdjust={inv.adjustStock}
           onRemove={inv.removeEntry}
-          onBack={() => setView('gallery')}
+          onBack={() => setView('browse')}
         />
       </>
     );
@@ -289,91 +343,29 @@ export default function App() {
           shortages={inv.shortagesFor(open.need)}
           onConsume={inv.consume}
           onEdit={() => startFrom(open, !open.custom)}
-          onBack={() => setView('gallery')}
+          onBack={() => setView('browse')}
         />
       </>
     );
   }
 
+  // 남은 경우는 모두 넘겨 보기 화면으로 — 화면 상태가 어긋나도 빈 화면이 뜨지 않게 한다
   return (
     <>
       {header}
       {banner}
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 text-[#5D4037] md:px-7 lg:max-w-5xl">
-        <h1 className="text-3xl font-extrabold">이런 도안이 있어요</h1>
-        <p className="mt-1 text-sm text-[#8A7263]">
-          {list.length}개 도안
-          {mine.list.length ? ` · 직접 만든 도안 ${mine.list.length}개 (${mine.storeLabel})` : ''}
-        </p>
-        {mine.shared && (!mine.online || mine.pending > 0) ? (
-          <p className="mt-2 rounded-xl border-2 border-[#EACB9B] bg-[#FFF8EC] px-3 py-2 text-sm text-[#7A5A2E]">
-            {mine.pending > 0
-              ? `직접 만든 도안 ${mine.pending}개가 아직 이 태블릿에만 있습니다. 인터넷이 연결되면 자동으로 올라가고, 그때부터 다른 태블릿에서도 보입니다.`
-              : '지금 공유 저장소에 연결되지 않았습니다. 만든 도안은 이 태블릿에 안전하게 보관되며, 연결되면 자동으로 올라갑니다.'}
-            <button
-              type="button"
-              onClick={mine.refresh}
-              className="ml-2 rounded-lg border-2 border-[#EACB9B] px-2 py-0.5 text-xs font-bold"
-            >
-              지금 맞추기
-            </button>
-          </p>
-        ) : null}
-
-        <div className="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
-          <button
-            type="button"
-            onClick={startNew}
-            className="flex min-h-[168px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#E4572E] bg-[#FFF6F1] p-3.5 text-[#E4572E]"
-          >
-            <span className="text-3xl leading-none">＋</span>
-            <span className="font-bold">새 도안 만들기</span>
-            <span className="text-xs">직접 칠해서 추가해요</span>
-          </button>
-
-          {list.map((p) => {
-            const short = inv.shortagesFor(p.need);
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => {
-                  setOpenId(p.id);
-                  setView('detail');
-                }}
-                className={`flex flex-col items-center gap-2 rounded-2xl border-2 bg-white p-3.5 ${
-                  p.custom ? 'border-[#E4572E]' : 'border-[#EADBC6]'
-                }`}
-              >
-                <span className="w-20">
-                  <PatternGrid rows={p.rows} title={p.title} />
-                </span>
-                <span className="font-bold">{p.title}</span>
-                <span className="text-xs tabular-nums text-[#8A7263]">
-                  {p.cols}×{p.rowCount} · {p.colorCount}색 · 비즈 {formatCount(p.beads)}개
-                </span>
-                {p.custom ? <span className="text-[11px] font-bold text-[#E4572E]">직접 만든 도안</span> : null}
-                {short.length > 0 ? (
-                  <span className="text-[11px] font-bold text-[#B3261E]">
-                    재고 부족 {short.map((k) => COLOR_NAME[k]).join(', ')}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            setSelection(ALL_SELECTED);
-            setView('start');
-          }}
-          className="mt-6 rounded-xl border-2 border-[#D8C2A6] px-4 py-2.5 font-bold"
-        >
-          ← 처음부터 다시 고르기
-        </button>
-      </section>
+      <PatternBrowse
+        patterns={browseList}
+        category={pickedCategory}
+        difficulty={pickedDifficulty}
+        shortagesFor={shortagesFor}
+        onOpen={(id) => {
+          setOpenId(id);
+          setView('detail');
+        }}
+        onBack={() => setView('difficulty')}
+        onNewPattern={startNew}
+      />
     </>
   );
 }
