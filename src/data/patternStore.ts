@@ -32,7 +32,7 @@ export interface PatternStore {
 }
 
 /** 한 도안의 최대 칸 수 — 태블릿에서 다루기 힘들 만큼 커지는 것을 막습니다 */
-export const MAX_SIDE = 17;
+export const MAX_SIDE = 30;
 export const MIN_SIDE = 4;
 
 export const newPatternId = () => `my-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;

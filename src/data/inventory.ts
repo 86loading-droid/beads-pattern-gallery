@@ -29,6 +29,7 @@ export const BEAD_COLORS: BeadColor[] = [
   { key: 'B', name: '파랑', hex: '#2E63C8', init: 0 },
   { key: 'C', name: '하늘', hex: '#7EC8E8', init: 0 },
   { key: 'F', name: '연핑크', hex: '#F7B6CC', init: 0 },
+  { key: 'D', name: '갈색', hex: '#8B5A2B', init: 0 },
 ];
 
 export const COLOR_HEX = Object.fromEntries(BEAD_COLORS.map((c) => [c.key, c.hex])) as Record<ColorKey, string>;
