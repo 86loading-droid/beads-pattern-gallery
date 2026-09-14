@@ -21,6 +21,9 @@ interface Props {
 const EMPTY = '.';
 const DIFFICULTY_LABEL = { easy: '쉬워요', medium: '보통이에요', challenge: '도전해요' };
 
+/** 자주 쓰는 판 크기 — 30칸까지 한 번에 고를 수 있게 둡니다 */
+const SIZE_PRESETS = [6, 8, 12, 16, 20, 30];
+
 function blank(cols: number, rows: number): string[] {
   return Array.from({ length: rows }, () => EMPTY.repeat(cols));
 }
@@ -216,6 +219,27 @@ export default function PatternEditor({
           <div className="mt-4 flex flex-wrap items-center gap-4">
             {stepper('가로', cols, (v) => setSize(v, rowCount))}
             {stepper('세로', rowCount, (v) => setSize(cols, v))}
+
+            <div className="mt-1">
+              <span className="text-sm text-[#8A7263]">한 번에 고르기</span>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {SIZE_PRESETS.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setSize(n, n)}
+                    aria-pressed={cols === n && rowCount === n}
+                    className={`rounded-lg border-2 px-2.5 py-1 text-sm font-bold tabular-nums ${
+                      cols === n && rowCount === n
+                        ? 'border-[#E4572E] bg-[#FFF6F1] text-[#E4572E]'
+                        : 'border-[#D8C2A6]'
+                    }`}
+                  >
+                    {n}×{n}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => setGrid(blank(cols, rowCount))}
